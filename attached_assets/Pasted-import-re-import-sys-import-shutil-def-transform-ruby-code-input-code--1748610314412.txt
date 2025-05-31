@@ -1,0 +1,51 @@
+import re
+import sys
+import shutil
+def transform_ruby_code(input_code):
+    """
+    Универсальное добавление поддержки AFL в Ruby-скрипт.
+    """
+    # Проверяем, есть ли блок лицензии
+    license_pattern = r'(Licensed under the Apache License, Version [\d.]+.*?# limitations under the License\.\s*#[-]+ #)'
+    if re.search(license_pattern, input_code, re.DOTALL):
+        input_code = re.sub(license_pattern, r'\1\nrequire "afl"\n', input_code, flags=re.DOTALL)
+    else:
+        # Если лицензии нет, добавляем require "afl" в начало
+        input_code = 'require "afl"\n' + input_code
+    # Вставка кода инициализации AFL перед разбором аргументов
+    afl_init_code = '''\nAFL.init\nafl_input = $stdin.gets\nARGV.replace(afl_input.split)\n'''
+    if "CommandParser::CmdParser.new(ARGV)" in input_code:
+        input_code = input_code.replace("CommandParser::CmdParser.new(ARGV)", afl_init_code + "CommandParser::CmdParser.new(ARGV)")
+    else:
+        # Если не найден разбор аргументов, добавляем перед первым `ARGV`
+        input_code = re.sub(r'ARGV', afl_init_code + 'ARGV', input_code, count=1)
+    return input_code
+# Получаем имя файла от пользователя
+if len(sys.argv) < 2:
+    print("Использование: python transform.py <имя_файла>")
+    sys.exit(1)
+input_filename = sys.argv[1]
+# Если файл не имеет расширения .rb, создаем копию с .rb
+if not input_filename.endswith(".rb"):
+    rb_filename = input_filename + ".rb"
+    try:
+        shutil.copy(input_filename, rb_filename)
+        print(f"Создан новый файл: {rb_filename}")
+        input_filename = rb_filename
+    except FileNotFoundError:
+        print(f"Ошибка: Файл '{input_filename}' не найден.")
+        sys.exit(1)
+try:
+    # Читаем исходный Ruby-код из файла с уже исправленным именем
+    with open(input_filename, "r", encoding="utf-8") as file:
+        ruby_code = file.read()
+except FileNotFoundError:
+    print(f"Ошибка: Файл '{input_filename}' не найден.")
+    sys.exit(1)
+output_filename = sys.argv[2] if len(sys.argv) > 2 else "output_" + input_filename
+# Применяем трансформацию
+transformed_code = transform_ruby_code(ruby_code)
+# Записываем результат в новый файл
+with open(output_filename, "w", encoding="utf-8") as file:
+    file.write(transformed_code)
+print(f"Трансформация завершена. Результат сохранён в {output_filename}")
