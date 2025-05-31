@@ -15,14 +15,16 @@ RUN apk add --no-cache \
 COPY package*.json ./
 
 # Install dependencies
-RUN npm ci --only=production
+# RUN npm ci --only=production
+
+RUN npm ci
 
 # Copy source code
 COPY . .
 
 # Copy host tool manager script
-COPY host-tool-manager.py /app/host-tool-manager.py
-RUN chmod +x /app/host-tool-manager.py
+COPY scripts/host-tool-manager.py /app/scripts/host-tool-manager.py
+RUN chmod +x /app/scripts/host-tool-manager.py
 
 # Build the application
 RUN npm run build

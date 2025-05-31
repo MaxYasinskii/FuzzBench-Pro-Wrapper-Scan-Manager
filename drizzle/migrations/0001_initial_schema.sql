@@ -65,12 +65,18 @@ ALTER TABLE "projects" ADD CONSTRAINT "projects_user_id_users_id_fk" FOREIGN KEY
 ALTER TABLE "scans" ADD CONSTRAINT "scans_project_id_projects_id_fk" FOREIGN KEY ("project_id") REFERENCES "projects"("id") ON DELETE cascade ON UPDATE no action;
 ALTER TABLE "scans" ADD CONSTRAINT "scans_tool_id_tools_id_fk" FOREIGN KEY ("tool_id") REFERENCES "tools"("id") ON DELETE cascade ON UPDATE no action;
 
--- Insert default security tools
-INSERT INTO "tools" ("name", "type", "description", "install_command", "run_command", "installed") VALUES
-('SonarQube', 'SAST', 'Static code analysis for quality and security', 'docker pull sonarqube:latest', 'sonar-scanner -Dsonar.projectKey=myproject', true),
-('Bandit', 'SAST', 'Python security vulnerability scanner', 'pip install bandit', 'bandit -r ./', true),
-('ESLint Security', 'SAST', 'JavaScript security rules for ESLint', 'npm install eslint-plugin-security', 'eslint --ext .js,.jsx .', false),
-('OWASP ZAP', 'DAST', 'Web application security scanner', 'docker pull owasp/zap2docker-stable', 'zap-baseline.py -t', true),
-('Nikto', 'DAST', 'Web server vulnerability scanner', 'apt-get install nikto', 'nikto -h', true),
-('Burp Suite', 'DAST', 'Advanced web application testing', 'wget https://portswigger.net/burp/releases/download', 'java -jar burpsuite.jar', false)
+-- Insert default tools
+INSERT INTO "tools" ("name", "type", "description", "install_command", "run_command", "installed", "created_at") VALUES
+('AFL++', 'DAST', 'Advanced American Fuzzy Lop fuzzer with improved performance', 'wget https://github.com/AFLplusplus/AFLplusplus/archive/stable.tar.gz && tar -xzf stable.tar.gz && cd AFLplusplus-stable && make && sudo make install', 'afl-fuzz', true, now()),
+('libFuzzer', 'DAST', 'LLVM in-process fuzzing library for coverage-guided fuzzing', 'apt-get install clang', 'clang -fsanitize=fuzzer', true, now()),
+('afl-ruby', 'DAST', 'Ruby fuzzing framework based on AFL', 'gem install afl-ruby', 'afl-ruby', true, now()),
+('OWASP ZAP', 'DAST', 'Web application security scanner', 'docker pull owasp/zap2docker-stable', 'zap-baseline.py -t', true, now()),
+('Nikto', 'DAST', 'Web server vulnerability scanner', 'apt-get install nikto', 'nikto -h', true, now()),
+('Semgrep', 'SAST', 'Static analysis tool for finding bugs and security issues', 'python3 -m pip install --user semgrep', 'semgrep --config=auto', true, now()),
+('SonarQube', 'SAST', 'Continuous code quality and security analysis platform', 'docker pull sonarqube', 'sonar-scanner', true, now()),
+('RubyCritic', 'SAST', 'Ruby code quality analysis tool', 'gem install rubycritic', 'rubycritic', false, now()),
+('RuboCop', 'SAST', 'Ruby static code analyzer and formatter', 'nix-env -iA nixpkgs.rubocop', 'rubocop', true, now()),
+('dewrapper', 'WRAPPER_GEN', 'Ruby fuzzing wrapper generator using transform.py', 'python3 -m pip install --user ruby-transform', 'python3 transform.py', true, now()),
+('futage', 'WRAPPER_GEN', 'C/C++ fuzzing wrapper generator', 'git clone https://github.com/futage/futage && cd futage && make install', 'futage', true, now()),
+('PyFuzzWrap', 'WRAPPER_GEN', 'Python fuzzing wrapper generator', 'python3 -m pip install --user pyfuzzwrap', 'pyfuzzwrap', false, now())
 ON CONFLICT DO NOTHING;

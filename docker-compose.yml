@@ -4,10 +4,12 @@ services:
   app:
     build: .
     ports:
-      - "5000:5000"
+      - "5050:5050"
+    env_file:
+      - .env
     environment:
       - NODE_ENV=production
-      - PORT=5000
+      - PORT=5050
       - SESSION_SECRET=${SESSION_SECRET}
       - DATABASE_URL=${DATABASE_URL}
     depends_on:
@@ -15,8 +17,7 @@ services:
     volumes:
       - .:/app
       - /app/node_modules
-      # Mount host directories for tool execution and data storage
-      - /home/$USER/fuzzbench-data:/app/data
+      - /home/vboxuser/fuzzbench-data:/app/data
       - /usr/local/bin:/app/host-tools:ro
     privileged: true
     pid: host
@@ -29,54 +30,10 @@ services:
       - POSTGRES_USER=devsec
       - POSTGRES_PASSWORD=secure_password_change_me
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - /home/$USER/fuzzbench-data/db:/backup
-
-  # ========================================
-  # LOCAL DOCKER DEPLOYMENT CONFIGURATION
-  # ========================================
-  # Uncomment the services below for local development without host integration
-  # Comment out the services above and uncomment these for standalone Docker deployment
-
-  # app-local:
-  #   build: .
-  #   ports:
-  #     - "5000:5000"
-  #   environment:
-  #     - NODE_ENV=production
-  #     - PORT=5000
-  #     - SESSION_SECRET=your-local-session-secret
-  #     - DATABASE_URL=postgresql://localuser:localpass@postgres-local:5432/fuzzbranchdb
-  #   depends_on:
-  #     - postgres-local
-  #   volumes:
-  #     - .:/app
-  #     - /app/node_modules
-  #     # Local directories for development
-  #     - ./data:/app/data
-  #     - ./tools:/app/host-tools
-  #   networks:
-  #     - fuzz-network-local
-
-  # postgres-local:
-  #   image: postgres:15
-  #   environment:
-  #     - POSTGRES_DB=fuzzbranchdb
-  #     - POSTGRES_USER=localuser
-  #     - POSTGRES_PASSWORD=localpass
-  #   ports:
-  #     - "5433:5432"  # Different port to avoid conflicts
-  #   volumes:
-  #     - postgres_data_local:/var/lib/postgresql/data
-  #   networks:
-  #     - fuzz-network-local
+      - /home/vboxuser/fuzzbench-data/db:/backup
 
 volumes:
   postgres_data:
-  # postgres_data_local:  # Uncomment for local deployment
-
-# networks:
-#   fuzz-network-local:   # Uncomment for local deployment
-#     driver: bridge
