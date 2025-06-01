@@ -1,114 +1,165 @@
 
 #!/usr/bin/env python3
 """
-Simple Tool Manager for Replit Host Environment
+Простой менеджер инструментов для установки на хост-машине
 """
 
-import os
-import sys
 import subprocess
-import shutil
+import sys
+import os
+import json
 from pathlib import Path
-import argparse
 
-def install_tool(tool_name, install_command):
-    """Установка инструмента на хосте Replit"""
-    print(f"Installing {tool_name}")
-    print(f"Command: {install_command}")
-    
-    try:
-        # Выполняем команду установки
-        result = subprocess.run(
-            install_command,
-            shell=True,
-            capture_output=True,
-            text=True,
-            timeout=300
-        )
+class HostToolManager:
+    def __init__(self):
+        self.tools = {
+            'afl++': {
+                'install': 'sudo apt-get update && sudo apt-get install -y afl++',
+                'check': 'which afl-fuzz'
+            },
+            'libfuzzer': {
+                'install': 'sudo apt-get update && sudo apt-get install -y clang',
+                'check': 'which clang'
+            },
+            'rubocop': {
+                'install': 'gem install rubocop',
+                'check': 'which rubocop'
+            },
+            'rubycritic': {
+                'install': 'gem install rubycritic',
+                'check': 'which rubycritic'
+            },
+            'semgrep': {
+                'install': 'python3 -m pip install semgrep',
+                'check': 'which semgrep'
+            },
+            'bandit': {
+                'install': 'python3 -m pip install bandit',
+                'check': 'which bandit'
+            }
+        }
+
+    def run_command(self, command, shell=True):
+        """Выполнить команду на хост-машине"""
+        try:
+            result = subprocess.run(
+                command,
+                shell=shell,
+                capture_output=True,
+                text=True,
+                timeout=300
+            )
+            return {
+                'returncode': result.returncode,
+                'stdout': result.stdout,
+                'stderr': result.stderr
+            }
+        except subprocess.TimeoutExpired:
+            return {
+                'returncode': 124,
+                'stdout': '',
+                'stderr': 'Command timed out'
+            }
+        except Exception as e:
+            return {
+                'returncode': 1,
+                'stdout': '',
+                'stderr': str(e)
+            }
+
+    def install_tool(self, tool_name):
+        """Установить инструмент на хост-машину"""
+        if tool_name not in self.tools:
+            return {
+                'success': False,
+                'error': f'Unknown tool: {tool_name}'
+            }
+
+        tool_config = self.tools[tool_name]
         
-        if result.returncode == 0:
-            print(f"✅ {tool_name} installed successfully")
-            print(f"Output: {result.stdout}")
-            return True
+        print(f"Installing {tool_name}...")
+        result = self.run_command(tool_config['install'])
+        
+        if result['returncode'] == 0:
+            # Проверяем установку
+            check_result = self.run_command(tool_config['check'])
+            if check_result['returncode'] == 0:
+                return {
+                    'success': True,
+                    'message': f'{tool_name} installed successfully',
+                    'output': result['stdout']
+                }
+            else:
+                return {
+                    'success': False,
+                    'error': f'{tool_name} installation verification failed'
+                }
         else:
-            print(f"❌ Installation failed: {result.stderr}")
-            return False
-            
-    except subprocess.TimeoutExpired:
-        print(f"❌ Installation timeout for {tool_name}")
-        return False
-    except Exception as e:
-        print(f"❌ Error installing {tool_name}: {str(e)}")
-        return False
+            return {
+                'success': False,
+                'error': result['stderr'],
+                'output': result['stdout']
+            }
 
-def run_tool(tool_name, command, project_path=None):
-    """Запуск инструмента"""
-    print(f"Running {tool_name}")
-    print(f"Command: {command}")
-    
-    # Определяем рабочую директорию
-    cwd = project_path if project_path and os.path.exists(project_path) else os.getcwd()
-    
-    try:
-        # Запускаем инструмент
-        process = subprocess.Popen(
-            command,
-            shell=True,
-            cwd=cwd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            bufsize=1,
-            universal_newlines=True
-        )
-        
-        # Читаем вывод в реальном времени
-        while True:
-            output = process.stdout.readline()
-            if output == '' and process.poll() is not None:
-                break
-            if output:
-                print(output.strip())
-        
-        # Получаем финальный код возврата
-        return_code = process.poll()
-        
-        if return_code == 0:
-            print(f"✅ {tool_name} completed successfully")
+    def run_tool(self, tool_name, target_path, options=None):
+        """Запустить инструмент на хост-машине"""
+        if tool_name == 'rubocop':
+            command = f'rubocop {target_path} --format json'
+        elif tool_name == 'rubycritic':
+            command = f'rubycritic {target_path}'
+        elif tool_name == 'semgrep':
+            command = f'semgrep --config=auto {target_path}'
+        elif tool_name == 'bandit':
+            command = f'bandit -r {target_path} -f json'
+        elif tool_name == 'afl++':
+            command = f'afl-fuzz -i input -o output {target_path}'
         else:
-            stderr = process.stderr.read()
-            print(f"❌ {tool_name} failed with code {return_code}")
-            if stderr:
-                print(f"Error: {stderr}")
-        
-        return return_code == 0
-        
-    except Exception as e:
-        print(f"❌ Error running {tool_name}: {str(e)}")
-        return False
+            command = f'{tool_name} {target_path}'
 
-def main():
-    parser = argparse.ArgumentParser(description="Simple Tool Manager for Replit")
-    parser.add_argument("action", choices=["install", "run"])
-    parser.add_argument("--tool-name", help="Tool name")
-    parser.add_argument("--command", help="Command to execute")
-    parser.add_argument("--project-path", help="Project path")
-    
-    args = parser.parse_args()
-    
-    if args.action == "install":
-        if not all([args.tool_name, args.command]):
-            print("❌ Missing required arguments for install")
-            sys.exit(1)
-        success = install_tool(args.tool_name, args.command)
-        sys.exit(0 if success else 1)
+        print(f"Running {tool_name} on {target_path}...")
+        result = self.run_command(command)
         
-    elif args.action == "run":
-        if not all([args.tool_name, args.command]):
-            print("❌ Missing required arguments for run")
-            sys.exit(1)
-        success = run_tool(args.tool_name, args.command, args.project_path)
-        sys.exit(0 if success else 1)
+        return {
+            'success': result['returncode'] == 0,
+            'output': result['stdout'],
+            'error': result['stderr'],
+            'tool': tool_name,
+            'target': target_path
+        }
 
-if __name__ == "__main__":
-    main()
+if __name__ == '__main__':
+    manager = HostToolManager()
+    
+    if len(sys.argv) < 3:
+        print("Usage: python3 simple-tool-manager.py <action> <tool_name> [target_path]")
+        print("Actions: install, run, check")
+        sys.exit(1)
+    
+    action = sys.argv[1]
+    tool_name = sys.argv[2]
+    
+    if action == 'install':
+        result = manager.install_tool(tool_name)
+        print(json.dumps(result, indent=2))
+    elif action == 'run':
+        if len(sys.argv) < 4:
+            print("Target path required for run action")
+            sys.exit(1)
+        target_path = sys.argv[3]
+        result = manager.run_tool(tool_name, target_path)
+        print(json.dumps(result, indent=2))
+    elif action == 'check':
+        if tool_name in manager.tools:
+            result = manager.run_command(manager.tools[tool_name]['check'])
+            print(json.dumps({
+                'installed': result['returncode'] == 0,
+                'tool': tool_name
+            }, indent=2))
+        else:
+            print(json.dumps({
+                'installed': False,
+                'error': f'Unknown tool: {tool_name}'
+            }, indent=2))
+    else:
+        print(f"Unknown action: {action}")
+        sys.exit(1)

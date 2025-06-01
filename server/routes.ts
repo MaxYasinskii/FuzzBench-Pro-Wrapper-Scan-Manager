@@ -1110,7 +1110,6 @@ type ScanResult = {
 
   app.put('/api/admin/users/:id/role', requireAdmin, async (req: any, res) => {
     try {
-
       const { id } = req.params;
       const { role } = req.body;
 
