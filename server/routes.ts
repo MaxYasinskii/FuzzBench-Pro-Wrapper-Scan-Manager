@@ -21,7 +21,7 @@ const terminalConnections = new Map<number, WebSocket[]>();
 // Функция для запуска инструмента в фоне
 async function runToolInBackground(toolId: number, command: string, projectPath: string, userId: string) {
   console.log(`Starting tool ${toolId} with command: ${command}`);
-  
+
   try {
     const tool = await storage.getToolById(toolId);
     if (!tool) {
@@ -36,10 +36,8 @@ async function runToolInBackground(toolId: number, command: string, projectPath:
     });
 
     // Выполняем команду запуска на хост-машине через host-tool-manager.py
-    const hostCommand = `python3 ./scripts/host-tool-manager.py run --tool-name "${tool.name}" --command "${command}" --project-path "${projectPath || ''}"`;
-    const child = spawn('sh', ['-c', hostCommand], {
+    const child = spawn('sh', ['-c', command], {
       stdio: ['pipe', 'pipe', 'pipe'],
-      cwd: '/host/tools' // важно: смонтированная хостовая директория
     });
 
     child.stdout?.on('data', (data) => {
@@ -62,7 +60,7 @@ async function runToolInBackground(toolId: number, command: string, projectPath:
 
     child.on('close', async (code) => {
       console.log(`Tool ${toolId} execution finished with code: ${code}`);
-      
+
       if (code === 0) {
         broadcastToTerminal(toolId, {
           type: 'success',
@@ -74,7 +72,7 @@ async function runToolInBackground(toolId: number, command: string, projectPath:
           message: `\n❌ Execution failed with exit code: ${code}\n`
         });
       }
-      
+
       broadcastToTerminal(toolId, {
         type: 'end',
         message: 'Tool execution completed.\n'
@@ -92,7 +90,7 @@ async function runToolInBackground(toolId: number, command: string, projectPath:
 
 async function installToolInBackground(toolId: number, installCommand: string, userId: string) {
   console.log(`Starting installation of tool ${toolId} with command: ${installCommand}`);
-  
+
   try {
     const tool = await storage.getToolById(toolId);
     if (!tool) {
@@ -106,11 +104,8 @@ async function installToolInBackground(toolId: number, installCommand: string, u
       message: `Starting installation of ${tool.name}...\n`
     });
 
-    // Выполняем команду установки на хост-машине через host-tool-manager.py
-    const hostCommand = `python3 ./scripts/host-tool-manager.py install --tool-name "${tool.name}" --tool-type "${tool.type}" --command "${installCommand}"`;
-    const child = spawn('sh', ['-c', hostCommand], {
+    const child = spawn('sh', ['-c', installCommand], {
       stdio: ['pipe', 'pipe', 'pipe'],
-      cwd: '/host/tools' // важно: смонтированная хостовая директория
     });
 
     child.stdout?.on('data', (data) => {
@@ -133,7 +128,7 @@ async function installToolInBackground(toolId: number, installCommand: string, u
 
     child.on('close', async (code) => {
       console.log(`Tool ${toolId} installation finished with code: ${code}`);
-      
+
       if (code === 0) {
         // Установка успешна
         await storage.updateToolInstallStatus(toolId, true);
@@ -148,7 +143,7 @@ async function installToolInBackground(toolId: number, installCommand: string, u
           message: `\n❌ Installation failed with exit code: ${code}\n`
         });
       }
-      
+
       broadcastToTerminal(toolId, {
         type: 'end',
         message: 'Installation process completed.\n'
@@ -202,11 +197,11 @@ async function runWrapperGeneration(language: string, projectPath: string, binar
 async function analyzeCpp(projectPath: string) {
   try {
     console.log(`Analyzing C++ project at ${projectPath}`);
-    
+
     // Simulate futag analysis - replace with actual futag integration
     const command = `echo "Analyzing C++ project with futag-like tools at ${projectPath}"`;
     const { stdout, stderr } = await execAsync(command);
-    
+
     return {
       success: true,
       message: "C++ analysis completed using futag-like analysis",
@@ -227,14 +222,14 @@ async function analyzeCpp(projectPath: string) {
 async function analyzeRuby(projectPath: string) {
   try {
     console.log(`Analyzing Ruby project at ${projectPath}`);
-    
+
     // Run rubocop and rubycritic as in your script
     const rubocopCommand = `rubocop ${projectPath} 2>/dev/null || echo "Rubocop analysis completed"`;
     const rubycriticCommand = `rubycritic ${projectPath} 2>/dev/null || echo "Rubycritic analysis completed"`;
-    
+
     const { stdout: rubocopOut } = await execAsync(rubocopCommand);
     const { stdout: rubycriticOut } = await execAsync(rubycriticCommand);
-    
+
     return {
       success: true,
       message: "Ruby analysis completed",
@@ -255,7 +250,7 @@ async function analyzeRuby(projectPath: string) {
 async function generateCppWrappers(projectPath: string) {
   try {
     console.log(`Generating C++ wrappers for ${projectPath}`);
-    
+
     // Simulate futag wrapper generation
     const wrapperCode = `// Generated C++ fuzzing wrapper using futag-like generator
 #include <fuzzer/FuzzedDataProvider.h>
@@ -265,10 +260,10 @@ async function generateCppWrappers(projectPath: string) {
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     FuzzedDataProvider fuzzed_data(data, size);
-    
+
     // Add your target function calls here
     // Based on analysis of ${projectPath}
-    
+
     return 0;
 }
 
@@ -295,11 +290,11 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
 async function generateRubyWrappers(binaryPath: string) {
   try {
     console.log(`Generating Ruby wrapper for ${binaryPath}`);
-    
+
     const binaryDir = path.dirname(binaryPath);
     const binaryName = path.basename(binaryPath, path.extname(binaryPath));
     const outputFile = path.join(binaryDir, `dewrapper_${binaryName}.rb`);
-    
+
     // Ruby wrapper code based on your transform.py logic
     const wrapperCode = `#!/usr/bin/env ruby
 # Generated Ruby fuzzing wrapper using Dewrapper
@@ -315,9 +310,9 @@ ARGV.replace(afl_input.split) if afl_input
 begin
   # Load the target Ruby file
   load "${binaryPath}"
-  
+
   # The target will run with fuzzed ARGV
-  
+
 rescue LoadError => e
   puts "Error loading target file: #{e.message}"
 rescue => e
@@ -375,10 +370,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { email, password } = req.body;
       console.log("Login attempt for:", email);
-      
+
       const user = await storage.getUserByEmail(email);
       console.log("User found:", user ? "Yes" : "No");
-      
+
       if (!user) {
         return res.status(401).json({ message: "Invalid email or password" });
       }
@@ -397,11 +392,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           await storage.updateUserPassword(user.id, hashedPassword);
         }
       }
-      
+
       if (!isValidPassword) {
         return res.status(401).json({ message: "Invalid email or password" });
       }
-      
+
       (req.session as any).userId = user.id;
       (req.session as any).userRole = user.role;
       res.json({ message: "Login successful", user: { ...user, password: undefined } });
@@ -440,14 +435,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/auth/switch-role', requireAuth, async (req: any, res) => {
     try {
       const { role } = req.body;
-      
+
       if (!role || !['admin', 'user'].includes(role)) {
         return res.status(400).json({ message: "Invalid role" });
       }
-      
+
       // Update session role (for demo purposes)
       req.session.userRole = role;
-      
+
       res.json({ 
         message: `Role switched to ${role}`,
         role: role
@@ -479,7 +474,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const toolId = parseInt(req.params.id);
       const { installCommand, runCommand } = req.body;
-      
+
       const tool = await storage.getToolById(toolId);
       if (!tool) {
         return res.status(404).json({ message: "Tool not found" });
@@ -506,7 +501,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const toolId = parseInt(req.params.id);
       const { command, projectPath } = req.body;
-      
+
       const tool = await storage.getToolById(toolId);
       if (!tool) {
         return res.status(404).json({ message: "Tool not found" });
@@ -531,7 +526,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const toolId = parseInt(req.params.id);
       const tool = await storage.getToolById(toolId);
-      
+
       if (!tool) {
         return res.status(404).json({ message: "Tool not found" });
       }
@@ -554,7 +549,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...req.body,
         ownerId: user.id,
       });
-      
+
       const tool = await storage.createTool(toolData);
       res.status(201).json(tool);
     } catch (error) {
@@ -576,17 +571,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const toolId = parseInt(req.params.id);
       const tool = await storage.getToolById(toolId);
-      
+
       if (!tool) {
         return res.status(404).json({ message: "Tool not found" });
       }
 
       // Simulate tool installation
       console.log(`Installing tool: ${tool.name} with command: ${tool.installCommand}`);
-      
+
       // Update tool status to installed
       const updatedTool = await storage.updateToolInstallStatus(toolId, true);
-      
+
       res.json({ 
         message: `Tool ${tool.name} installed successfully`,
         tool: updatedTool 
@@ -608,7 +603,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const toolId = parseInt(req.params.id);
       const tool = await storage.getToolById(toolId);
-      
+
       if (!tool) {
         return res.status(404).json({ message: "Tool not found" });
       }
@@ -618,18 +613,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Execute uninstall command through host-tool-manager.py
-      const uninstallCommand = `python3 ./host-tool-manager.py remove --tool-name "${tool.name}" --tool-type "${tool.type}"`;
-      
+      const uninstallCommand = tool.installCommand ? `sh -c "nix-env -e ${tool.installCommand}"` : `echo "Tool ${tool.name} does not have a remove command"`;
+
       try {
         await execAsync(uninstallCommand);
         console.log(`Successfully uninstalled tool: ${tool.name}`);
       } catch (execError) {
         console.log(`Uninstall command executed (may show warnings): ${tool.name}`);
       }
-      
+
       // Update tool status to not installed
       const updatedTool = await storage.updateToolInstallStatus(toolId, false);
-      
+
       res.json({ 
         message: `Tool ${tool.name} uninstalled successfully`,
         tool: updatedTool 
@@ -645,7 +640,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.session.userId;
       const user = await storage.getUser(userId);
-      
+
       let projects;
       if (user?.role === 'admin') {
         // Админы видят все проекты
@@ -654,7 +649,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Обычные пользователи видят только свои проекты
         projects = await storage.getUserProjects(userId);
       }
-      
+
       res.json(projects);
     } catch (error) {
       console.error("Error fetching projects:", error);
@@ -669,7 +664,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...req.body,
         userId,
       });
-      
+
       const project = await storage.createProject(projectData);
       res.status(201).json(project);
     } catch (error) {
@@ -686,23 +681,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const projectId = parseInt(req.params.id);
       const userId = req.session.userId;
       const user = await storage.getUser(userId);
-      
+
       // Получаем проект для проверки прав
       const project = await storage.getProjectById(projectId);
       if (!project) {
         return res.status(404).json({ message: "Project not found" });
       }
-      
+
       // Проверяем права: пользователь может удалять только свои проекты, админ - любые
       if (user?.role !== 'admin' && project.userId !== userId) {
         return res.status(403).json({ message: "Access denied" });
       }
-      
+
       const deleted = await storage.deleteProject(projectId);
       if (!deleted) {
         return res.status(404).json({ message: "Project not found" });
       }
-      
+
       res.json({ message: "Project deleted successfully" });
     } catch (error) {
       console.error("Error deleting project:", error);
@@ -715,14 +710,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.session.userId;
       const user = await storage.getUser(userId);
-      
+
       let scans;
       if (user?.role === 'admin') {
         scans = await storage.getScans();
       } else {
         scans = await storage.getUserScans(userId);
       }
-      
+
       // Get related project and tool data
       const enrichedScans = await Promise.all(scans.map(async (scan) => {
         const project = await storage.getProjectById(scan.projectId);
@@ -733,7 +728,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           tool: tool ? { id: tool.id, name: tool.name, type: tool.type } : null,
         };
       }));
-      
+
       res.json(enrichedScans);
     } catch (error) {
       console.error("Error fetching scans:", error);
@@ -745,40 +740,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.session.userId;
       const scanData = insertScanSchema.parse(req.body);
-      
+
       // Verify project ownership
       const project = await storage.getProjectById(scanData.projectId);
       const user = await storage.getUser(userId);
-      
+
       if (!project) {
         return res.status(404).json({ message: "Project not found" });
       }
-      
+
       if (user?.role !== 'admin' && project.userId !== userId) {
         return res.status(403).json({ message: "Access denied to this project" });
       }
-      
+
       // Verify tool exists and is installed
       const tool = await storage.getToolById(scanData.toolId);
       if (!tool) {
         return res.status(404).json({ message: "Tool not found" });
       }
-      
+
       if (!tool.installed) {
         return res.status(400).json({ message: "Tool is not installed" });
       }
-      
+
       // Create scan
       const scan = await storage.createScan({
         ...scanData,
         status: "running",
         startedAt: new Date(),
       });
-      
+
       // Simulate scan execution
       console.log(`Starting scan: ${tool.name} on project ${project.name}`);
       console.log(`Running command: ${tool.runCommand} ${scanData.targetUrl || ''}`);
-      
+
       // Simulate async scan completion
       setTimeout(async () => {
         const mockResults = {
@@ -788,11 +783,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           scanDuration: "4m 32s",
           timestamp: new Date().toISOString(),
         };
-        
+
         await storage.updateScanStatus(scan.id, "completed", mockResults);
         console.log(`Scan ${scan.id} completed with results:`, mockResults);
       }, Math.random() * 30000 + 10000); // Complete between 10-40 seconds
-      
+
       res.status(201).json(scan);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -807,20 +802,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const scanId = parseInt(req.params.id);
       const scan = await storage.getScanById(scanId);
-      
+
       if (!scan) {
         return res.status(404).json({ message: "Scan not found" });
       }
-      
+
       // Check access permissions
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
       const project = await storage.getProjectById(scan.projectId);
-      
+
       if (user?.role !== 'admin' && project?.userId !== userId) {
         return res.status(403).json({ message: "Access denied to this scan" });
       }
-      
+
       res.json(scan);
     } catch (error) {
       console.error("Error fetching scan:", error);
@@ -833,9 +828,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.session.userId;
       const user = await storage.getUser(userId);
-      
+
       let projects, scans, tools;
-      
+
       if (user?.role === 'admin') {
         projects = await storage.getProjects();
         scans = await storage.getScans();
@@ -845,7 +840,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         scans = await storage.getUserScans(userId);
         tools = await storage.getTools();
       }
-      
+
 type ScanResult = {
   vulnerabilities?: number;
   [key: string]: any;
@@ -855,7 +850,7 @@ type ScanResult = {
       const vulnerabilities = scans
       .filter(s => (s.result as ScanResult)?.vulnerabilities)
       .reduce((sum, s) => sum + ((s.result as ScanResult).vulnerabilities || 0), 0);
-      
+
       res.json({
         projects: projects.length,
         tools: tools.filter(t => t.installed).length,
@@ -895,7 +890,7 @@ type ScanResult = {
       }
 
       const result = await storage.generateWrapper(language, path, options);
-      
+
       // Save wrapper to database
       const wrapper = await storage.createWrapper({
         userId,
@@ -905,9 +900,9 @@ type ScanResult = {
         path,
         options: options ? JSON.stringify(options) : null
       });
-      
+
       console.log(`Generated fuzzing wrapper: ${result.filename} for ${language}`);
-      
+
       res.json({
         message: "Fuzzing wrapper generated successfully",
         wrapper: {
@@ -923,6 +918,7 @@ type ScanResult = {
     } catch (error) {
       console.error("Error generating wrapper:", error);
       res.status(500).json({ message: "Failed to generate wrapper" });
+    }```
     }
   });
 
@@ -976,7 +972,7 @@ type ScanResult = {
   app.post('/api/analysis/run', requireAuth, async (req: any, res) => {
     try {
       const { language, projectPath, binaryPath, analyze, generate } = req.body;
-      
+
       if (!language || !projectPath) {
         return res.status(400).json({ message: "Language and project path are required" });
       }
@@ -1018,7 +1014,7 @@ type ScanResult = {
     try {
       const toolId = parseInt(req.params.id);
       const { installCommand, runCommand, description } = req.body;
-      
+
       const tool = await storage.getToolById(toolId);
       if (!tool) {
         return res.status(404).json({ message: "Tool not found" });
@@ -1074,7 +1070,7 @@ type ScanResult = {
       }
 
       const { email, password, firstName, lastName, role } = req.body;
-      
+
       if (!email || !password) {
         return res.status(400).json({ 
           message: "Email and password are required" 
@@ -1089,7 +1085,7 @@ type ScanResult = {
 
       // Hash the password
       const hashedPassword = await bcrypt.hash(password, 12);
-      
+
       // Generate unique ID
       const newUserId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
@@ -1117,7 +1113,7 @@ type ScanResult = {
 
       const { id } = req.params;
       const { role } = req.body;
-      
+
       if (!role || !['admin', 'user'].includes(role)) {
         return res.status(400).json({ 
           message: "Invalid role. Must be 'admin' or 'user'" 
@@ -1140,17 +1136,17 @@ type ScanResult = {
     try {
       const currentUserId = req.session.userId;
       const { id } = req.params;
-      
+
       // Prevent admin from deleting themselves
       if (currentUserId === id) {
         return res.status(400).json({ message: "Cannot delete your own account" });
       }
-      
+
       const deleted = await storage.deleteUser(id);
       if (!deleted) {
         return res.status(404).json({ message: "User not found" });
       }
-      
+
       res.json({ message: "User deleted successfully" });
     } catch (error) {
       console.error("Error deleting user:", error);
@@ -1163,7 +1159,7 @@ type ScanResult = {
     try {
       const toolId = parseInt(req.params.id);
       const { projectPath } = req.body;
-      
+
       if (!projectPath) {
         return res.status(400).json({ message: "Project path is required" });
       }
@@ -1204,7 +1200,7 @@ type ScanResult = {
   });
 
   const httpServer = createServer(app);
-  
+
   // Настройка WebSocket сервера для терминала
   const wss = new WebSocketServer({ 
     server: httpServer, 
@@ -1213,11 +1209,11 @@ type ScanResult = {
 
   wss.on('connection', (ws, req) => {
     console.log('Terminal WebSocket connection established');
-    
+
     ws.on('message', (message) => {
       try {
         const data = JSON.parse(message.toString());
-        
+
         if (data.type === 'subscribe' && data.toolId) {
           // Подписываемся на терминал конкретного инструмента
           const toolId = parseInt(data.toolId);
@@ -1225,9 +1221,9 @@ type ScanResult = {
             terminalConnections.set(toolId, []);
           }
           terminalConnections.get(toolId)?.push(ws);
-          
+
           console.log(`Client subscribed to terminal for tool ${toolId}`);
-          
+
           ws.send(JSON.stringify({
             type: 'subscribed',
             toolId: toolId,
@@ -1264,7 +1260,7 @@ async function runRuboCopAnalysis(projectPath: string) {
     console.log(`Running RuboCop analysis on ${projectPath}`);
     const command = `rubocop ${projectPath} --format json || echo "RuboCop analysis completed"`;
     const { stdout } = await execAsync(command);
-    
+
     return {
       success: true,
       message: "RuboCop analysis completed",
@@ -1286,7 +1282,7 @@ async function runRubyCriticAnalysis(projectPath: string) {
     console.log(`Running RubyCritic analysis on ${projectPath}`);
     const command = `rubycritic ${projectPath} --format json || echo "RubyCritic analysis completed"`;
     const { stdout } = await execAsync(command);
-    
+
     return {
       success: true,
       message: "RubyCritic analysis completed",
@@ -1308,7 +1304,7 @@ async function runGenericSASTTool(tool: any, projectPath: string) {
     console.log(`Running ${tool.name} on ${projectPath}`);
     const command = tool.runCommand ? `${tool.runCommand} ${projectPath}` : `echo "Running ${tool.name} on ${projectPath}"`;
     const { stdout } = await execAsync(command);
-    
+
     return {
       success: true,
       message: `${tool.name} analysis completed`,
@@ -1330,7 +1326,7 @@ async function runGenericTool(tool: any, projectPath: string) {
     console.log(`Running ${tool.name} on ${projectPath}`);
     const command = tool.runCommand ? `${tool.runCommand} ${projectPath}` : `echo "Running ${tool.name} on ${projectPath}"`;
     const { stdout } = await execAsync(command);
-    
+
     return {
       success: true,
       message: `${tool.name} execution completed`,
