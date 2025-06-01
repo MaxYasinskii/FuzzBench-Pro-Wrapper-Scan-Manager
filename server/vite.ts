@@ -47,7 +47,7 @@ export async function setupVite(app: Express, server: Server) {
     const url = req.originalUrl;
 
     try {
-      const clientTemplate = path.resolve(process.cwd(), "client", "index.html");
+      const clientTemplate = path.resolve(__dirname, "..", "client", "index.html");
       let template = await fs.promises.readFile(clientTemplate, "utf-8");
 
       template = template.replace(
@@ -66,6 +66,18 @@ export async function setupVite(app: Express, server: Server) {
 
 export function serveStatic(app: Express) {
   const publicPath = path.resolve(__dirname, "public");
+  
+  if (!fs.existsSync(publicPath)) {
+    throw new Error(
+      `Could not find the build directory: ${publicPath}, make sure to build the client first`
+    );
+  }
+  
+  app.use(express.static(publicPath));
+  app.use("*", (_req, res) => {
+    res.sendFile(path.resolve(publicPath, "index.html"));
+  });
+}(__dirname, "public");
 
   if (!fs.existsSync(publicPath)) {
     throw new Error(
