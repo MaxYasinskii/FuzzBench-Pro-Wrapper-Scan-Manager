@@ -383,9 +383,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (user.password.startsWith('$2a$') || user.password.startsWith('$2b$')) {
         // Hashed password
         isValidPassword = await bcrypt.compare(password, user.password);
+        console.log("Password comparison result:", isValidPassword);
       } else {
         // Plain text password (for backwards compatibility)
         isValidPassword = user.password === password;
+        console.log("Plain text password check:", isValidPassword);
         // Update to hashed password
         if (isValidPassword) {
           const hashedPassword = await bcrypt.hash(password, 12);
