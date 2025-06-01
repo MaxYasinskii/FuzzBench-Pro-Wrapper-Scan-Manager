@@ -15,6 +15,7 @@ CREATE INDEX IF NOT EXISTS "IDX_session_expire" ON "sessions" ("expire");
 CREATE TABLE IF NOT EXISTS "users" (
 	"id" varchar PRIMARY KEY NOT NULL,
 	"email" varchar UNIQUE,
+	"password" varchar NOT NULL,
 	"first_name" varchar,
 	"last_name" varchar,
 	"profile_image_url" varchar,
@@ -79,4 +80,10 @@ INSERT INTO "tools" ("name", "type", "description", "install_command", "run_comm
 ('dewrapper', 'WRAPPER_GEN', 'Ruby fuzzing wrapper generator using transform.py', 'python3 -m pip install --user ruby-transform', 'python3 transform.py', true, now()),
 ('futage', 'WRAPPER_GEN', 'C/C++ fuzzing wrapper generator', 'git clone https://github.com/futage/futage && cd futage && make install', 'futage', true, now()),
 ('PyFuzzWrap', 'WRAPPER_GEN', 'Python fuzzing wrapper generator', 'python3 -m pip install --user pyfuzzwrap', 'pyfuzzwrap', false, now())
+ON CONFLICT DO NOTHING;
+
+-- Insert default users
+INSERT INTO "users" ("id", "email", "password", "first_name", "last_name", "role", "created_at", "updated_at") VALUES
+('admin_1', 'admin@example.com', 'admin123', 'Admin', 'User', 'admin', now(), now()),
+('user_1', 'user@example.com', 'user123', 'Regular', 'User', 'user', now(), now())
 ON CONFLICT DO NOTHING;
