@@ -39,7 +39,7 @@ export const users = pgTable("users", {
 // Security tools table
 export const tools = pgTable("tools", {
   id: serial("id").primaryKey(),
-  name: varchar("name").notNull(),
+  name: varchar("name").notNull().unique(),
   type: varchar("type").notNull(), // SAST or DAST
   description: text("description"),
   installCommand: text("install_command"),
