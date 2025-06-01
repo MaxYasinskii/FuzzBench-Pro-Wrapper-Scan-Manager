@@ -918,7 +918,6 @@ type ScanResult = {
     } catch (error) {
       console.error("Error generating wrapper:", error);
       res.status(500).json({ message: "Failed to generate wrapper" });
-    }```
     }
   });
 
