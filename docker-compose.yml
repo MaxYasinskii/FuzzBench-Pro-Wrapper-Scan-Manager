@@ -19,6 +19,7 @@ services:
       - /app/node_modules
       - /home/vboxuser/fuzzbench-data:/app/data
       - /usr/local/bin:/app/host-tools:ro
+      - /home/vboxuser/devsec-tools:/host/tools        # <--- ДОБАВИТЬ
     privileged: true
     pid: host
     network_mode: host

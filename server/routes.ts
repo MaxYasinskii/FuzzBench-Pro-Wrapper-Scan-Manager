@@ -39,7 +39,7 @@ async function runToolInBackground(toolId: number, command: string, projectPath:
     const hostCommand = `python3 ./scripts/host-tool-manager.py run --tool-name "${tool.name}" --command "${command}" --project-path "${projectPath || ''}"`;
     const child = spawn('sh', ['-c', hostCommand], {
       stdio: ['pipe', 'pipe', 'pipe'],
-      cwd: process.cwd()
+      cwd: '/host/tools' // важно: смонтированная хостовая директория
     });
 
     child.stdout?.on('data', (data) => {
@@ -110,7 +110,7 @@ async function installToolInBackground(toolId: number, installCommand: string, u
     const hostCommand = `python3 ./scripts/host-tool-manager.py install --tool-name "${tool.name}" --tool-type "${tool.type}" --command "${installCommand}"`;
     const child = spawn('sh', ['-c', hostCommand], {
       stdio: ['pipe', 'pipe', 'pipe'],
-      cwd: process.cwd()
+      cwd: '/host/tools' // важно: смонтированная хостовая директория
     });
 
     child.stdout?.on('data', (data) => {
@@ -846,10 +846,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         tools = await storage.getTools();
       }
       
+type ScanResult = {
+  vulnerabilities?: number;
+  [key: string]: any;
+};
+
       const runningScans = scans.filter(s => s.status === 'running').length;
       const vulnerabilities = scans
-        .filter(s => s.result?.vulnerabilities)
-        .reduce((sum, s) => sum + (s.result.vulnerabilities || 0), 0);
+      .filter(s => (s.result as ScanResult)?.vulnerabilities)
+      .reduce((sum, s) => sum + ((s.result as ScanResult).vulnerabilities || 0), 0);
       
       res.json({
         projects: projects.length,

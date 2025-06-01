@@ -104,12 +104,15 @@ export const insertProjectSchema = createInsertSchema(projects).omit({
   createdAt: true,
 });
 
-export const insertScanSchema = createInsertSchema(scans).omit({
-  id: true,
-  createdAt: true,
-  startedAt: true,
-  finishedAt: true,
-});
+export const insertScanSchema = createInsertSchema(scans)
+  .omit({
+    id: true,
+    createdAt: true,
+    finishedAt: true,
+  })
+  .extend({
+    startedAt: z.date(),
+  });
 
 export const insertWrapperSchema = createInsertSchema(wrappers).omit({
   id: true,
