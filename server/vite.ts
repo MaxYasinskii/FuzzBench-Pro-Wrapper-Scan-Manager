@@ -4,7 +4,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { createServer as createViteServer, createLogger } from "vite";
 import { type Server } from "http";
-import viteConfig from "../vite.config"; // оставляем как есть
+import viteConfig from "../vite.config.js";
 import { nanoid } from "nanoid";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -47,7 +47,7 @@ export async function setupVite(app: Express, server: Server) {
     const url = req.originalUrl;
 
     try {
-      const clientTemplate = path.resolve(__dirname, "..", "client", "index.html");
+      const clientTemplate = path.resolve(process.cwd(), "client", "index.html");
       let template = await fs.promises.readFile(clientTemplate, "utf-8");
 
       template = template.replace(
