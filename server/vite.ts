@@ -77,16 +77,4 @@ export function serveStatic(app: Express) {
   app.use("*", (_req, res) => {
     res.sendFile(path.resolve(publicPath, "index.html"));
   });
-}(__dirname, "public");
-
-  if (!fs.existsSync(publicPath)) {
-    throw new Error(
-      `Could not find the build directory: ${publicPath}, make sure to build the client first`
-    );
-  }
-
-  app.use(express.static(publicPath));
-  app.use("*", (_req, res) => {
-    res.sendFile(path.resolve(publicPath, "index.html"));
-  });
 }
