@@ -1,0 +1,56 @@
+from flask import Flask, request, jsonify, render_template
+import os
+import sys
+app = Flask(__name__)
+def analyze_cpp(project_path):
+    from futag.preprocessor import Builder
+    FUTAG_PATH = "/home/vboxuser/Downloads/futag-llvm/"
+    builder = Builder(FUTAG_PATH, project_path, clean=True)
+    builder.auto_build()
+    builder.analyze()
+def generate_cpp_wrappers(project_path):
+    from futag.generator import Generator
+    FUTAG_PATH = "/home/vboxuser/Downloads/futag-llvm/"
+    generator = Generator(FUTAG_PATH, project_path)
+    generator.gen_targets(anonymous=False, max_wrappers=10)
+    generator.compile_targets(4)
+def analyze_ruby(project_path):
+    os.system(f"rubocop {project_path}")
+    os.system(f"rubycritic {project_path}")
+def generate_ruby_wrappers(binary_path):
+    binary_dir = os.path.dirname(binary_path)
+    binary_name, ext = os.path.splitext(os.path.basename(binary_path))
+    output_file = os.path.join(binary_dir, f"output_{binary_name}.rb")
+    os.system(f"python3.11 transform.py {binary_path} {output_file}")
+@app.route('/')
+def index():
+    return render_template('index.html')
+@app.route('/run', methods=['POST'])
+def run():
+    data = request.json
+    lang = data.get("language")
+    project_path = data.get("project_path")
+    binary_path = data.get("binary_path") if lang == "ruby" else None
+    analyze = data.get("analyze")
+    generate = data.get("generate")
+    
+    if not os.path.exists(project_path):
+        return jsonify({"error": "Project path does not exist."}), 400
+    if lang == "ruby" and (not binary_path or not os.path.exists(binary_path)):
+        return jsonify({"error": "Binary path does not exist."}), 400
+    
+    if analyze:
+        if lang == "cpp":
+            analyze_cpp(project_path)
+        else:
+            analyze_ruby(project_path)
+    
+    if generate:
+        if lang == "cpp":
+            generate_cpp_wrappers(project_path)
+        else:
+            generate_ruby_wrappers(binary_path)
+    
+    return jsonify({"message": "Process completed successfully."})
+if __name__ == '__main__':
+    app.run(debug=True)
