@@ -5,7 +5,9 @@ import dotenv from "dotenv";
 import process from "process";
 
 dotenv.config(); // Загружаем переменные из .env
-console.log("✅ PORT from .env:", process.env.PORT);
+const PORT = parseInt(process.env.PORT || "5050");
+console.log(`✅ PORT from .env: ${PORT}`);
+
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
@@ -58,15 +60,14 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  const port = parseInt(process.env.PORT || "5000", 10);
 
-  server.listen({ port, host: "0.0.0.0", reusePort: true }, () => {
-    log(`🚀 Server is running on http://localhost:${port} (${app.get("env")})`);
+  server.listen({ port: PORT, host: "0.0.0.0", reusePort: true }, () => {
+    log(`🚀 Server is running on http://localhost:${PORT} (${app.get("env")})`);
   });
 
   server.on("error", (err: any) => {
     if (err.code === "EADDRINUSE") {
-      console.error(`❌ Port ${port} is already in use. Please set a different PORT in your .env`);
+      console.error(`❌ Port ${PORT} is already in use. Please set a different PORT in your .env`);
       process.exit(1);
     } else {
       console.error("❌ Server error:", err);

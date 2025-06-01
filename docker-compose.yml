@@ -8,33 +8,42 @@ services:
     env_file:
       - .env
     environment:
-      - NODE_ENV=production
+      - NODE_ENV=${NODE_ENV:-development}
       - PORT=5050
       - SESSION_SECRET=${SESSION_SECRET}
       - DATABASE_URL=${DATABASE_URL}
+      - PGHOST=${PGHOST}
+      - PGPORT=${PGPORT}
+      - PGUSER=${PGUSER}
+      - PGPASSWORD=${PGPASSWORD}
+      - PGDATABASE=${PGDATABASE}
     depends_on:
       - postgres
     volumes:
       - .:/app
       - /app/node_modules
-      - /home/vboxuser/fuzzbench-data:/app/data
-      - /usr/local/bin:/app/host-tools:ro
-      - /home/vboxuser/devsec-tools:/host/tools        # <--- ДОБАВИТЬ
-    privileged: true
-    pid: host
-    network_mode: host
+      - ${HOME}/fuzzbench-data:/app/data
+      - ${HOME}/devsec-tools:/app/tools
+    networks:
+      - app-network
 
   postgres:
     image: postgres:15
     environment:
-      - POSTGRES_DB=devsec_scanner
-      - POSTGRES_USER=devsec
-      - POSTGRES_PASSWORD=secure_password_change_me
+      - POSTGRES_DB=${PGDATABASE:-devsec_scanner}
+      - POSTGRES_USER=${PGUSER:-devsec}
+      - POSTGRES_PASSWORD=${PGPASSWORD:-secure_password_change_me}
     ports:
-      - "5433:5432"
+      - "${PGPORT:-5433}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - /home/vboxuser/fuzzbench-data/db:/backup
+      - ${HOME}/fuzzbench-data/db:/backup
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
 
 volumes:
   postgres_data:

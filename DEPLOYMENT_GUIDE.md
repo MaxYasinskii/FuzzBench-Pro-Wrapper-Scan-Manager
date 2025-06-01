@@ -1,3 +1,4 @@
+
 # FuzzBranch Scanner - Deployment Guide
 
 ## Prerequisites
@@ -5,41 +6,47 @@
 - Node.js 18+ 
 - PostgreSQL 12+
 - Git
-- Python 3.11+ (for security tools)
+- Python 3.11+ (для инструментов безопасности)
+- Docker и Docker Compose (для Docker развертывания)
 
-## Quick Setup Commands
+## Способ 1: Локальное развертывание
 
-### 1. Clone and Install
+### 1. Клонирование и установка
 ```bash
 git clone <your-repository-url>
-cd fuzzbrach-scanner
+cd fuzzbranch-scanner
 npm install
 ```
 
-### 2. Environment Setup
+### 2. Настройка окружения
 ```bash
 cp .env.example .env
 ```
 
-Edit `.env` file:
+Отредактируйте `.env` файл:
 ```env
 DATABASE_URL="postgresql://username:password@localhost:5432/fuzzbranchdb"
 SESSION_SECRET="your-256-bit-random-string"
-NODE_ENV="production"
+NODE_ENV="development"
+PORT=5050
 ```
 
-### 3. Database Setup
+### 3. Настройка базы данных
 ```bash
-# Create database
-createdb fuzzbranchdb
+# Создание базы данных
+sudo -u postgres createdb fuzzbranchdb
 
-# Push schema
+# Создание пользователя (опционально)
+sudo -u postgres psql -c "CREATE USER fuzzuser WITH PASSWORD 'your_password';"
+sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE fuzzbranchdb TO fuzzuser;"
+
+# Применение схемы
 npm run db:push
 ```
 
-### 4. Start Application
+### 4. Запуск приложения
 ```bash
-# Development
+# Разработка
 npm run dev
 
 # Production
@@ -47,172 +54,200 @@ npm run build
 npm start
 ```
 
-## Database Migration Verification
+## Способ 2: Docker развертывание
 
-The application uses these tables - verify they exist:
-
-```sql
--- Check all tables exist
-SELECT table_name FROM information_schema.tables 
-WHERE table_schema = 'public';
-
--- Expected tables:
--- sessions, users, tools, projects, scans, wrappers
-```
-
-## Default Authentication
-
-Login credentials for testing:
-- **Admin**: admin@example.com / admin123
-- **User**: user@example.com / user123
-
-**Important**: Change these passwords in production!
-
-## API Endpoints Summary
-
-### Core Authentication
-- `POST /api/auth/login` - User login
-- `POST /api/auth/logout` - User logout  
-- `GET /api/auth/user` - Current user info
-
-### Admin User Management
-- `GET /api/users` - List all users (admin only)
-- `POST /api/users` - Create user (admin only)
-- `PATCH /api/users/:id/role` - Update role (admin only)
-- `DELETE /api/users/:id` - Delete user (admin only)
-
-### Security Tools
-- `GET /api/tools` - List available tools
-- `PATCH /api/tools/:id/install` - Install tool (admin only)
-- `POST /api/tools/:id/run` - Run tool (admin only)
-
-### Project Management
-- `GET /api/projects` - User projects
-- `POST /api/projects` - Create project
-- `DELETE /api/projects/:id` - Delete project
-
-### Security Scanning
-- `GET /api/scans` - User scans
-- `POST /api/scans` - Create scan
-- `GET /api/scans/:id` - Scan results
-
-### Fuzzing Wrapper Generation
-- `POST /api/wrappers/generate` - Generate wrapper
-- `GET /api/wrappers` - User wrappers
-- `DELETE /api/wrappers/:id` - Delete wrapper
-
-### Statistics
-- `GET /api/stats` - Dashboard stats
-
-### WebSocket
-- `WS /ws` - Real-time terminal output
-
-## Production Deployment Checklist
-
-### Security
-- [ ] Change default passwords
-- [ ] Set strong SESSION_SECRET
-- [ ] Configure HTTPS
-- [ ] Set up firewall rules
-- [ ] Regular security updates
-
-### Database
-- [ ] PostgreSQL configured and running
-- [ ] Database backups configured
-- [ ] Connection limits set appropriately
-
-### Application
-- [ ] Environment variables set
-- [ ] Process manager (PM2/systemd) configured
-- [ ] Log rotation configured
-- [ ] Monitoring setup
-
-### System Dependencies
-- [ ] Python 3.11+ installed
-- [ ] Ruby installed (for Ruby tools)
-- [ ] Docker installed (for containerized tools)
-- [ ] Build tools installed (gcc, make)
-
-## Troubleshooting
-
-### Common Issues
-
-1. **Database connection fails**:
-   - Verify DATABASE_URL format
-   - Check PostgreSQL is running
-   - Verify credentials and permissions
-
-2. **Tool installation fails**:
-   - Check Python/pip is available
-   - Verify system dependencies
-   - Check network connectivity
-
-3. **Session issues**:
-   - Verify SESSION_SECRET is set
-   - Check session table exists
-   - Clear browser cookies
-
-4. **Permission errors**:
-   - Verify user roles in database
-   - Check authentication middleware
-   - Verify session is valid
-
-### Log Locations
-
-- Application logs: console output
-- Database logs: PostgreSQL logs
-- Tool installation: WebSocket terminal output
-
-## Performance Optimization
-
-### Database
-- Create indexes on frequently queried columns
-- Regular VACUUM and ANALYZE
-- Connection pooling
-
-### Application
-- Enable gzip compression
-- Static file caching
-- CDN for assets
-
-### Security Tools
-- Limit concurrent tool executions
-- Implement timeout mechanisms
-- Resource usage monitoring
-
-## Backup Strategy
-
-### Database Backup
+### 1. Подготовка
 ```bash
-pg_dump fuzzbranchdb > backup_$(date +%Y%m%d).sql
+git clone <your-repository-url>
+cd fuzzbranch-scanner
+cp .env.example2 .env
 ```
 
-### Application Backup
-- Source code (Git repository)
-- Configuration files
-- Generated wrappers
-- Log files
+### 2. Создание директорий
+```bash
+mkdir -p $HOME/fuzzbench-data
+mkdir -p $HOME/fuzzbench-data/projects
+mkdir -p $HOME/fuzzbench-data/db
+mkdir -p $HOME/devsec-tools
+```
 
-## Monitoring
+### 3. Настройка переменных окружения
+Используйте настройки из `.env.example2`:
+```env
+DATABASE_URL="postgresql://devsec:secure_password_change_me@postgres:5432/devsec_scanner"
+SESSION_SECRET="super-secure-secret-should-be-256-bit"
+NODE_ENV="development"
+PORT=5050
+PGHOST=postgres
+PGPORT=5432
+PGUSER=devsec
+PGPASSWORD=secure_password_change_me
+PGDATABASE=devsec_scanner
+```
 
-### Health Checks
-- `/api/auth/user` - Application health
-- Database connectivity
-- Disk space usage
-- Memory usage
+### 4. Запуск
+```bash
+docker-compose up -d
+```
 
-### Metrics to Monitor
-- Response times
-- Error rates
-- Database performance
-- Tool execution success rates
-- User activity
+### 5. Проверка
+```bash
+# Статус контейнеров
+docker-compose ps
 
-## Support
+# Логи приложения
+docker-compose logs -f app
 
-For deployment issues:
-1. Check logs for error messages
-2. Verify all prerequisites are met
-3. Test database connectivity
-4. Verify environment variables
-5. Check system dependencies
+# Логи базы данных
+docker-compose logs -f postgres
+```
+
+## Проверка развертывания
+
+### Тест подключения к базе данных
+```bash
+# Локально
+psql $DATABASE_URL -c "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';"
+
+# В Docker
+docker-compose exec postgres psql -U devsec -d devsec_scanner -c "\dt"
+```
+
+Ожидаемые таблицы: sessions, users, tools, projects, scans, wrappers
+
+### Тест API эндпоинтов
+```bash
+# Тест входа
+curl -X POST http://localhost:5050/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@example.com","password":"admin123"}'
+
+# Список инструментов
+curl http://localhost:5050/api/tools
+```
+
+## Учетные данные по умолчанию
+
+- **Администратор**: admin@example.com / admin123
+- **Пользователь**: user@example.com / user123
+
+**Важно**: Смените пароли в production!
+
+## Production чеклист
+
+### Безопасность
+- [ ] Изменить пароли по умолчанию
+- [ ] Установить надежный SESSION_SECRET
+- [ ] Настроить HTTPS
+- [ ] Настроить правила firewall
+- [ ] Регулярные обновления безопасности
+
+### База данных
+- [ ] PostgreSQL настроен и запущен
+- [ ] Настроены backup'ы базы данных
+- [ ] Установлены лимиты подключений
+
+### Приложение
+- [ ] Переменные окружения настроены
+- [ ] Настроен менеджер процессов (PM2/systemd)
+- [ ] Настроена ротация логов
+- [ ] Настроен мониторинг
+
+### Системные зависимости
+- [ ] Python 3.11+ установлен
+- [ ] Ruby установлен (для Ruby инструментов)
+- [ ] Docker установлен (для контейнерных инструментов)
+- [ ] Инструменты сборки (gcc, make)
+
+## Устранение неполадок
+
+### Частые проблемы
+
+1. **Ошибка подключения к базе данных**:
+   - Проверить формат DATABASE_URL
+   - Убедиться что PostgreSQL запущен
+   - Проверить учетные данные и разрешения
+
+2. **Ошибка установки инструментов**:
+   - Проверить наличие Python/pip
+   - Проверить системные зависимости
+   - Проверить сетевое подключение
+
+3. **Проблемы с сессиями**:
+   - Проверить что SESSION_SECRET установлен
+   - Проверить что таблица sessions существует
+   - Очистить cookies браузера
+
+4. **Ошибки разрешений**:
+   - Проверить роли пользователей в базе данных
+   - Проверить middleware аутентификации
+   - Проверить валидность сессии
+
+5. **Конфликт портов**:
+   - Проверить что порт 5050 свободен: `sudo lsof -i :5050`
+   - Остановить конфликтующие процессы
+   - Изменить PORT в .env файле при необходимости
+
+### Расположение логов
+
+- Логи приложения: консольный вывод
+- Логи базы данных: логи PostgreSQL
+- Установка инструментов: вывод WebSocket терминала
+
+## Оптимизация производительности
+
+### База данных
+- Создать индексы на часто запрашиваемых колонках
+- Регулярный VACUUM и ANALYZE
+- Пул соединений
+
+### Приложение
+- Включить gzip сжатие
+- Кеширование статических файлов
+- CDN для ресурсов
+
+### Инструменты безопасности
+- Ограничить количество одновременных выполнений
+- Реализовать механизмы timeout'а
+- Мониторинг использования ресурсов
+
+## Backup стратегия
+
+### Backup базы данных
+```bash
+# Локально
+pg_dump fuzzbranchdb > backup_$(date +%Y%m%d).sql
+
+# Docker
+docker-compose exec postgres pg_dump -U devsec devsec_scanner > backup_$(date +%Y%m%d).sql
+```
+
+### Backup приложения
+- Исходный код (Git репозиторий)
+- Конфигурационные файлы
+- Сгенерированные обертки
+- Файлы логов
+
+## Мониторинг
+
+### Health Check'и
+- `/api/auth/user` - здоровье приложения
+- Подключение к базе данных
+- Использование дискового пространства
+- Использование памяти
+
+### Метрики для мониторинга
+- Время отклика
+- Частота ошибок
+- Производительность базы данных
+- Успешность выполнения инструментов
+- Активность пользователей
+
+## Поддержка
+
+При проблемах с развертыванием:
+1. Проверить логи на сообщения об ошибках
+2. Убедиться что все предварительные требования выполнены
+3. Протестировать подключение к базе данных
+4. Проверить переменные окружения
+5. Проверить системные зависимости
