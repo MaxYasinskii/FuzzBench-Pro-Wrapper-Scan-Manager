@@ -27,6 +27,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { ChevronDown, ChevronRight, Copy, Download, Trash2, Calendar, FileCode } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/hooks/useLanguage";
 
 const wrapperSchema = z.object({
   language: z.enum(["c_cpp", "ruby", "python"]),
@@ -48,6 +49,7 @@ const wrapperSchema = z.object({
 type WrapperFormData = z.infer<typeof wrapperSchema>;
 
 export default function FuzzingWrapperGenerator() {
+  const { lang } = useLanguage();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [expandedWrappers, setExpandedWrappers] = useState<Record<string, boolean>>({});
@@ -91,17 +93,22 @@ export default function FuzzingWrapperGenerator() {
       }
       
       toast({
-        title: "Wrapper generated successfully",
-        description: `Generated ${result.wrapper?.filename || 'wrapper'} for ${form.getValues().language}`,
+        title: lang === 'ru' ? 'Обёртка создана' : 'Wrapper generated successfully',
+        description:
+          lang === 'ru'
+            ? `Создан файл ${result.wrapper?.filename || 'wrapper'} для ${form.getValues().language}`
+            : `Generated ${result.wrapper?.filename || 'wrapper'} for ${form.getValues().language}`,
       });
       
       form.reset();
     },
     onError: (error: any) => {
       toast({
-        title: "Generation failed",
-        description: error.message || "Failed to generate fuzzing wrapper",
-        variant: "destructive",
+        title: lang === 'ru' ? 'Ошибка генерации' : 'Generation failed',
+        description:
+          error.message ||
+          (lang === 'ru' ? 'Не удалось сгенерировать обёртку' : 'Failed to generate fuzzing wrapper'),
+        variant: 'destructive',
       });
     },
   });
@@ -117,15 +124,15 @@ export default function FuzzingWrapperGenerator() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/wrappers'] });
       toast({
-        title: "Wrapper deleted",
-        description: "Wrapper has been deleted successfully",
+        title: lang === 'ru' ? 'Обёртка удалена' : 'Wrapper deleted',
+        description: lang === 'ru' ? 'Обёртка успешно удалена' : 'Wrapper has been deleted successfully',
       });
     },
     onError: (error: any) => {
       toast({
-        title: "Delete failed",
-        description: error.message || "Failed to delete wrapper",
-        variant: "destructive",
+        title: lang === 'ru' ? 'Ошибка удаления' : 'Delete failed',
+        description: error.message || (lang === 'ru' ? 'Не удалось удалить обёртку' : 'Failed to delete wrapper'),
+        variant: 'destructive',
       });
     },
   });
@@ -148,13 +155,13 @@ export default function FuzzingWrapperGenerator() {
     try {
       await navigator.clipboard.writeText(wrapper.code);
       toast({
-        title: "Code copied",
-        description: "Wrapper code copied to clipboard",
+        title: lang === 'ru' ? 'Код скопирован' : 'Code copied',
+        description: lang === 'ru' ? 'Код обёртки скопирован в буфер' : 'Wrapper code copied to clipboard',
       });
     } catch (error) {
       toast({
-        title: "Copy failed",
-        description: "Failed to copy code to clipboard",
+        title: lang === 'ru' ? 'Ошибка копирования' : 'Copy failed',
+        description: lang === 'ru' ? 'Не удалось скопировать код' : 'Failed to copy code to clipboard',
         variant: "destructive",
       });
     }
@@ -179,8 +186,8 @@ export default function FuzzingWrapperGenerator() {
     // This would require a new API endpoint to delete all user wrappers
     // For now, we'll just show a message
     toast({
-      title: "Feature not available",
-      description: "Clear all wrappers feature coming soon",
+      title: lang === 'ru' ? 'Функция недоступна' : 'Feature not available',
+      description: lang === 'ru' ? 'Очистка обёрток будет доступна позже' : 'Clear all wrappers feature coming soon',
     });
   };
 
@@ -188,9 +195,13 @@ export default function FuzzingWrapperGenerator() {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Fuzzing Wrapper Generator</CardTitle>
+          <CardTitle>
+            {lang === 'ru' ? 'Генератор фуззинг‑обёрток' : 'Fuzzing Wrapper Generator'}
+          </CardTitle>
           <CardDescription>
-            Generate intelligent fuzzing wrappers for C/C++ (futage), Ruby (dewrapper), and Python (PyFuzzWrap) applications
+            {lang === 'ru'
+              ? 'Генерация интеллектуальных фуззинг‑обёрток для C/C++ (futage), Ruby (dewrapper) и Python (PyFuzzWrap)'
+              : 'Generate intelligent fuzzing wrappers for C/C++ (futage), Ruby (dewrapper) and Python (PyFuzzWrap) applications'}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -202,11 +213,13 @@ export default function FuzzingWrapperGenerator() {
                   name="language"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Programming Language</FormLabel>
+                      <FormLabel>
+                        {lang === 'ru' ? 'Язык программирования' : 'Programming Language'}
+                      </FormLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select language" />
+                            <SelectValue placeholder={lang === 'ru' ? 'Выберите язык' : 'Select language'} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
@@ -225,11 +238,13 @@ export default function FuzzingWrapperGenerator() {
                   name="generator"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Generator Type</FormLabel>
+                      <FormLabel>
+                        {lang === 'ru' ? 'Тип генератора' : 'Generator Type'}
+                      </FormLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select generator" />
+                            <SelectValue placeholder={lang === 'ru' ? 'Выберите генератор' : 'Select generator'} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
@@ -250,7 +265,9 @@ export default function FuzzingWrapperGenerator() {
                 name="path"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Source Code Path</FormLabel>
+                    <FormLabel>
+                      {lang === 'ru' ? 'Путь к исходникам' : 'Source Code Path'}
+                    </FormLabel>
                     <FormControl>
                       <Input
                         placeholder="/path/to/source/code"
@@ -268,11 +285,19 @@ export default function FuzzingWrapperGenerator() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>
-                      Binary Path {form.watch("language") === "ruby" ? "(Required for Ruby)" : "(Optional)"}
+                      {lang === 'ru'
+                        ? `Путь к бинарю ${form.watch('language') === 'ruby' ? '(обязательно для Ruby)' : '(необязательно)'}`
+                        : `Binary Path ${form.watch('language') === 'ruby' ? '(Required for Ruby)' : '(Optional)'}`}
                     </FormLabel>
                     <FormControl>
                       <Input
-                        placeholder={form.watch("language") === "ruby" ? "/path/to/ruby/binary (required)" : "/path/to/compiled/binary"}
+                        placeholder={
+                          form.watch('language') === 'ruby'
+                            ? lang === 'ru'
+                              ? '/path/to/ruby/binary (обязательно)'
+                              : '/path/to/ruby/binary (required)'
+                            : '/path/to/compiled/binary'
+                        }
                         {...field}
                       />
                     </FormControl>
@@ -286,7 +311,9 @@ export default function FuzzingWrapperGenerator() {
                 name="options"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Options (JSON)</FormLabel>
+                    <FormLabel>
+                      {lang === 'ru' ? 'Параметры (JSON)' : 'Options (JSON)'}
+                    </FormLabel>
                     <FormControl>
                       <Textarea
                         placeholder='{"timeout": 30, "iterations": 1000}'
@@ -298,12 +325,18 @@ export default function FuzzingWrapperGenerator() {
                 )}
               />
 
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 disabled={generateWrapperMutation.isPending}
                 className="w-full"
               >
-                {generateWrapperMutation.isPending ? "Generating..." : "Generate Wrapper"}
+                {generateWrapperMutation.isPending
+                  ? lang === 'ru'
+                    ? 'Генерация...'
+                    : 'Generating...'
+                  : lang === 'ru'
+                    ? 'Создать обёртку'
+                    : 'Generate Wrapper'}
               </Button>
             </form>
           </Form>
@@ -316,10 +349,14 @@ export default function FuzzingWrapperGenerator() {
           <div>
             <CardTitle className="flex items-center gap-2">
               <FileCode className="h-5 w-5" />
-              Generated Wrappers ({wrappers.length})
+              {lang === 'ru'
+                ? `Сгенерированные обёртки (${wrappers.length})`
+                : `Generated Wrappers (${wrappers.length})`}
             </CardTitle>
             <CardDescription>
-              Your generated fuzzing wrappers history
+              {lang === 'ru'
+                ? 'История созданных фуззинг‑обёрток'
+                : 'Your generated fuzzing wrappers history'}
             </CardDescription>
           </div>
           {wrappers.length > 0 && (
@@ -329,15 +366,19 @@ export default function FuzzingWrapperGenerator() {
               onClick={clearAllWrappers}
             >
               <Trash2 className="h-4 w-4 mr-2" />
-              Clear All
+              {lang === 'ru' ? 'Очистить всё' : 'Clear All'}
             </Button>
           )}
         </CardHeader>
         <CardContent>
           {isLoadingWrappers ? (
-            <p className="text-center text-muted-foreground">Loading wrappers...</p>
+            <p className="text-center text-muted-foreground">
+              {lang === 'ru' ? 'Загрузка обёрток...' : 'Loading wrappers...'}
+            </p>
           ) : wrappers.length === 0 ? (
-            <p className="text-center text-muted-foreground">No wrappers generated yet. Create your first fuzzing wrapper above!</p>
+            <p className="text-center text-muted-foreground">
+              {lang === 'ru' ? 'Обёртки ещё не созданы. Создайте первую выше!' : 'No wrappers generated yet. Create your first fuzzing wrapper above!'}
+            </p>
           ) : (
             <div className="space-y-4">
               {wrappers.map((wrapper: any) => (
@@ -406,7 +447,7 @@ export default function FuzzingWrapperGenerator() {
                           <code>{wrapper.code}</code>
                         </pre>
                         <div className="mt-2 text-xs text-muted-foreground">
-                          Path: {wrapper.path}
+                          {lang === 'ru' ? 'Путь:' : 'Path:'} {wrapper.path}
                         </div>
                       </div>
                     </CollapsibleContent>

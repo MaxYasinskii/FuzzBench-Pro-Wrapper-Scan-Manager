@@ -42,6 +42,8 @@ import InstallToolModal from "@/components/InstallToolModal";
 import RunToolModal from "@/components/RunToolModal";
 import TerminalModal from "@/components/TerminalModal";
 import ConfigureToolModal from "@/components/ConfigureToolModal";
+import { useLanguage } from "@/hooks/useLanguage";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 interface Stats {
   projects: number;
@@ -91,6 +93,7 @@ interface Scan {
 
 export default function Dashboard() {
   const { user } = useAuth() as { user: any };
+  const { lang } = useLanguage();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -308,23 +311,30 @@ export default function Dashboard() {
           {/* Header */}
           <div className="flex justify-between items-center mb-6">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Security Scanner Dashboard</h1>
-              <p className="text-gray-600">Manage your security tools and monitor scan results</p>
+              <h1 className="text-3xl font-bold text-gray-900">
+                {lang === 'ru' ? 'Панель сканера безопасности' : 'Security Scanner Dashboard'}
+              </h1>
+              <p className="text-gray-600">
+                {lang === 'ru'
+                  ? 'Управляйте инструментами безопасности и контролируйте результаты сканирований'
+                  : 'Manage your security tools and monitor scan results'}
+              </p>
             </div>
             <div className="flex items-center space-x-4">
               {user?.role === 'admin' && <RoleSwitcher currentRole={user?.role} />}
+              <LanguageSwitcher />
               <div className="flex space-x-2">
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   onClick={handleRefresh}
                   disabled={refreshMutation.isPending}
                 >
                   <RefreshCw className={`w-4 h-4 mr-2 ${refreshMutation.isPending ? 'animate-spin' : ''}`} />
-                  Refresh
+                  {lang === 'ru' ? 'Обновить' : 'Refresh'}
                 </Button>
                 <Button onClick={() => setShowNewScanModal(true)}>
                   <Plus className="w-4 h-4 mr-2" />
-                  New Scan
+                  {lang === 'ru' ? 'Новое сканирование' : 'New Scan'}
                 </Button>
               </div>
             </div>
@@ -332,11 +342,11 @@ export default function Dashboard() {
 
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="mb-6">
-              <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-              <TabsTrigger value="tools">Tools</TabsTrigger>
-              <TabsTrigger value="projects">Projects</TabsTrigger>
-              <TabsTrigger value="scans">Scans</TabsTrigger>
-              <TabsTrigger value="api-docs">API Docs</TabsTrigger>
+              <TabsTrigger value="dashboard">{lang === 'ru' ? 'Панель' : 'Dashboard'}</TabsTrigger>
+              <TabsTrigger value="tools">{lang === 'ru' ? 'Инструменты' : 'Tools'}</TabsTrigger>
+              <TabsTrigger value="projects">{lang === 'ru' ? 'Проекты' : 'Projects'}</TabsTrigger>
+              <TabsTrigger value="scans">{lang === 'ru' ? 'Сканирования' : 'Scans'}</TabsTrigger>
+              <TabsTrigger value="api-docs">{lang === 'ru' ? 'Документация' : 'API Docs'}</TabsTrigger>
             </TabsList>
 
             <TabsContent value="dashboard" className="space-y-6">
@@ -346,28 +356,36 @@ export default function Dashboard() {
                   <CardContent className="p-6 text-center">
                     <Folder className="w-8 h-8 text-primary mx-auto mb-2" />
                     <h3 className="text-2xl font-bold text-primary">{stats?.projects || 0}</h3>
-                    <p className="text-muted-foreground">Active Projects</p>
+                    <p className="text-muted-foreground">
+                      {lang === 'ru' ? 'Активные проекты' : 'Active Projects'}
+                    </p>
                   </CardContent>
                 </Card>
                 <Card>
                   <CardContent className="p-6 text-center">
                     <Shield className="w-8 h-8 text-green-500 mx-auto mb-2" />
                     <h3 className="text-2xl font-bold text-green-500">{stats?.tools || 0}</h3>
-                    <p className="text-muted-foreground">Available Tools</p>
+                    <p className="text-muted-foreground">
+                      {lang === 'ru' ? 'Доступные инструменты' : 'Available Tools'}
+                    </p>
                   </CardContent>
                 </Card>
                 <Card>
                   <CardContent className="p-6 text-center">
                     <Search className="w-8 h-8 text-yellow-500 mx-auto mb-2" />
                     <h3 className="text-2xl font-bold text-yellow-500">{stats?.scansRunning || 0}</h3>
-                    <p className="text-muted-foreground">Running Scans</p>
+                    <p className="text-muted-foreground">
+                      {lang === 'ru' ? 'Запущенные сканирования' : 'Running Scans'}
+                    </p>
                   </CardContent>
                 </Card>
                 <Card>
                   <CardContent className="p-6 text-center">
                     <AlertTriangle className="w-8 h-8 text-red-500 mx-auto mb-2" />
                     <h3 className="text-2xl font-bold text-red-500">{stats?.vulnerabilities || 0}</h3>
-                    <p className="text-muted-foreground">Vulnerabilities</p>
+                    <p className="text-muted-foreground">
+                      {lang === 'ru' ? 'Уязвимости' : 'Vulnerabilities'}
+                    </p>
                   </CardContent>
                 </Card>
               </div>
@@ -377,19 +395,19 @@ export default function Dashboard() {
                 <CardHeader>
                   <CardTitle className="flex items-center">
                     <Clock className="w-5 h-5 mr-2" />
-                    Recent Scans
+                    {lang === 'ru' ? 'Последние сканирования' : 'Recent Scans'}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Project</TableHead>
-                        <TableHead>Tool</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Started</TableHead>
-                        <TableHead>Duration</TableHead>
-                        <TableHead>Actions</TableHead>
+                        <TableHead>{lang === 'ru' ? 'Проект' : 'Project'}</TableHead>
+                        <TableHead>{lang === 'ru' ? 'Инструмент' : 'Tool'}</TableHead>
+                        <TableHead>{lang === 'ru' ? 'Статус' : 'Status'}</TableHead>
+                        <TableHead>{lang === 'ru' ? 'Начато' : 'Started'}</TableHead>
+                        <TableHead>{lang === 'ru' ? 'Длительность' : 'Duration'}</TableHead>
+                        <TableHead>{lang === 'ru' ? 'Действия' : 'Actions'}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -410,7 +428,13 @@ export default function Dashboard() {
                             </div>
                           </TableCell>
                           <TableCell>{getStatusBadge(scan.status)}</TableCell>
-                          <TableCell>{scan.startedAt ? formatTimeAgo(scan.startedAt) : 'Not started'}</TableCell>
+                          <TableCell>
+                            {scan.startedAt
+                              ? formatTimeAgo(scan.startedAt)
+                              : lang === 'ru'
+                                ? 'Не начато'
+                                : 'Not started'}
+                          </TableCell>
                           <TableCell>
                             {scan.status === "running" && (
                               <Progress value={Math.random() * 100} className="w-20" />

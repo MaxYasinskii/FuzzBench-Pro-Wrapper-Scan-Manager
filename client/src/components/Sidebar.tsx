@@ -13,6 +13,8 @@ import {
   Crown,
   User as UserIcon,
 } from "lucide-react";
+import { useLanguage } from "@/hooks/useLanguage";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 interface User {
   id: string;
@@ -30,6 +32,7 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ user, activeTab, onTabChange }: SidebarProps) {
+  const { lang } = useLanguage();
   const handleLogout = async () => {
     try {
       const response = await fetch('/api/auth/logout', {
@@ -45,15 +48,15 @@ export default function Sidebar({ user, activeTab, onTabChange }: SidebarProps) 
   };
 
   const navItems = [
-    { id: "dashboard", label: "Dashboard", icon: BarChart3 },
-    { id: "tools", label: "Security Tools", icon: Shield },
-    { id: "projects", label: "Projects", icon: Folder },
-    { id: "scans", label: "Scans", icon: Search },
-    { id: "api-docs", label: "API Documentation", icon: Code },
+    { id: "dashboard", label: lang === 'ru' ? 'Панель' : 'Dashboard', icon: BarChart3 },
+    { id: "tools", label: lang === 'ru' ? 'Инструменты' : 'Security Tools', icon: Shield },
+    { id: "projects", label: lang === 'ru' ? 'Проекты' : 'Projects', icon: Folder },
+    { id: "scans", label: lang === 'ru' ? 'Сканирования' : 'Scans', icon: Search },
+    { id: "api-docs", label: lang === 'ru' ? 'Документация API' : 'API Documentation', icon: Code },
   ];
 
   if (user?.role === 'admin') {
-    navItems.push({ id: "admin", label: "Admin Panel", icon: Settings });
+    navItems.push({ id: "admin", label: lang === 'ru' ? 'Админ' : 'Admin Panel', icon: Settings });
   }
 
   return (
@@ -62,9 +65,14 @@ export default function Sidebar({ user, activeTab, onTabChange }: SidebarProps) 
       <div className="p-6 border-b border-white/20">
         <div className="flex items-center space-x-2 mb-2">
           <Shield className="w-8 h-8" />
-          <h1 className="text-xl font-bold">DevSec Scanner</h1>
+          <h1 className="text-xl font-bold">
+            {lang === 'ru' ? 'DevSec Сканер' : 'DevSec Scanner'}
+          </h1>
+          <LanguageSwitcher />
         </div>
-        <p className="text-sm text-blue-100">Security Tool Management</p>
+        <p className="text-sm text-blue-100">
+          {lang === 'ru' ? 'Управление инструментами безопасности' : 'Security Tool Management'}
+        </p>
       </div>
 
       {/* User Info */}
@@ -128,7 +136,7 @@ export default function Sidebar({ user, activeTab, onTabChange }: SidebarProps) 
           onClick={handleLogout}
         >
           <LogOut className="w-5 h-5 mr-3" />
-          Logout
+          {lang === 'ru' ? 'Выйти' : 'Logout'}
         </Button>
       </div>
     </div>
