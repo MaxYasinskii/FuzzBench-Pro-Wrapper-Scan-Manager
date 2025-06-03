@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
-import { spawn } from "child_process";
+import { execCommand } from "./ssh";
 import { storage } from "./storage";
 import { insertToolSchema, insertProjectSchema, insertScanSchema } from "@shared/schema";
 import { z } from "zod";
@@ -35,31 +35,20 @@ async function runToolInBackground(toolId: number, command: string, projectPath:
       message: `Starting ${tool.name}...\n`
     });
 
-    // Выполняем команду запуска на хост-машине через host-tool-manager.py
-    const child = spawn('sh', ['-c', command], {
-      stdio: ['pipe', 'pipe', 'pipe'],
+    // Выполняем команду запуска локально или через SSH
+    const code = await execCommand({
+      command,
+      onStdout: (output) => {
+        console.log(`Tool ${toolId} stdout:`, output);
+        broadcastToTerminal(toolId, { type: 'stdout', message: output });
+      },
+      onStderr: (output) => {
+        console.log(`Tool ${toolId} stderr:`, output);
+        broadcastToTerminal(toolId, { type: 'stderr', message: output });
+      }
     });
 
-    child.stdout?.on('data', (data) => {
-      const output = data.toString();
-      console.log(`Tool ${toolId} stdout:`, output);
-      broadcastToTerminal(toolId, {
-        type: 'stdout',
-        message: output
-      });
-    });
-
-    child.stderr?.on('data', (data) => {
-      const output = data.toString();
-      console.log(`Tool ${toolId} stderr:`, output);
-      broadcastToTerminal(toolId, {
-        type: 'stderr',
-        message: output
-      });
-    });
-
-    child.on('close', async (code) => {
-      console.log(`Tool ${toolId} execution finished with code: ${code}`);
+    console.log(`Tool ${toolId} execution finished with code: ${code}`);
 
       if (code === 0) {
         broadcastToTerminal(toolId, {
@@ -73,10 +62,9 @@ async function runToolInBackground(toolId: number, command: string, projectPath:
         });
       }
 
-      broadcastToTerminal(toolId, {
-        type: 'end',
-        message: 'Tool execution completed.\n'
-      });
+    broadcastToTerminal(toolId, {
+      type: 'end',
+      message: 'Tool execution completed.\n'
     });
 
   } catch (error) {
@@ -104,30 +92,19 @@ async function installToolInBackground(toolId: number, installCommand: string, u
       message: `Starting installation of ${tool.name}...\n`
     });
 
-    const child = spawn('sh', ['-c', installCommand], {
-      stdio: ['pipe', 'pipe', 'pipe'],
+    const code = await execCommand({
+      command: installCommand,
+      onStdout: (output) => {
+        console.log(`Tool ${toolId} stdout:`, output);
+        broadcastToTerminal(toolId, { type: 'stdout', message: output });
+      },
+      onStderr: (output) => {
+        console.log(`Tool ${toolId} stderr:`, output);
+        broadcastToTerminal(toolId, { type: 'stderr', message: output });
+      }
     });
 
-    child.stdout?.on('data', (data) => {
-      const output = data.toString();
-      console.log(`Tool ${toolId} stdout:`, output);
-      broadcastToTerminal(toolId, {
-        type: 'stdout',
-        message: output
-      });
-    });
-
-    child.stderr?.on('data', (data) => {
-      const output = data.toString();
-      console.log(`Tool ${toolId} stderr:`, output);
-      broadcastToTerminal(toolId, {
-        type: 'stderr',
-        message: output
-      });
-    });
-
-    child.on('close', async (code) => {
-      console.log(`Tool ${toolId} installation finished with code: ${code}`);
+    console.log(`Tool ${toolId} installation finished with code: ${code}`);
 
       if (code === 0) {
         // Установка успешна
@@ -144,10 +121,9 @@ async function installToolInBackground(toolId: number, installCommand: string, u
         });
       }
 
-      broadcastToTerminal(toolId, {
-        type: 'end',
-        message: 'Installation process completed.\n'
-      });
+    broadcastToTerminal(toolId, {
+      type: 'end',
+      message: 'Installation process completed.\n'
     });
 
   } catch (error) {
